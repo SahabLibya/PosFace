@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-pos-dark: #121212;
+  /* Deeper dark mode */
+  --color-pos-dark-panel: #1e1e1e;
+  --color-pos-dark-hover: #2c2c2c;
+  --color-pos-border: #333333;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    background-color: #f3f4f6;
+    color: #111827;
+    transition-property: color, background-color;
+    transition-duration: 200ms;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  .dark body {
+    background-color: var(--color-pos-dark);
+    color: #f9fafb;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+/* 🌟 MODERNIZED POS MODAL */
+.pos-modal-card {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  /* Sleeker rounded corners */
+}
+
+.dark .pos-modal-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  color: #f9fafb;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* 🌟 MODERNIZED NUMPAD BUTTONS */
+.pos-key-btn {
+  min-height: 64px;
+  background: #f1f5f9;
+  color: #1e293b;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 150ms ease;
+  user-select: none;
+}
+
+.pos-key-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.pos-key-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0);
+}
+
+.dark .pos-key-btn {
+  background: #2a2a2a;
+  color: #f8fafc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .pos-key-btn:hover:not(:disabled) {
+  background: #333333;
+}
+
+.pos-key-btn-enter {
+  background: #2563eb !important;
+  /* Blue accent */
+  color: white !important;
+}
+
+.pos-key-btn-enter:hover:not(:disabled) {
+  background: #1d4ed8 !important;
+}
+
+.pos-key-btn-empty {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  cursor: default;
 }

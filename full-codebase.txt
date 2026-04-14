@@ -1,0 +1,2033 @@
+
+
+================================================================
+File Path: AGENTS.md
+================================================================
+
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+
+
+================================================================
+File Path: app\components\pos\ActionButton.tsx
+================================================================
+
+import type { ElementType } from 'react';
+
+type ActionButtonProps = {
+    FKey?: string;
+    icon?: ElementType;
+    label: string;
+    colSpan?: 1 | 2;
+    color?: string;
+    textColor?: string;
+    onClick?: () => void;
+};
+
+export default function ActionButton({
+    FKey,
+    icon: Icon,
+    label,
+    colSpan = 1,
+    color = 'bg-white dark:bg-pos-dark border border-gray-300 dark:border-pos-border hover:bg-gray-100 dark:hover:bg-pos-dark-hover',
+    textColor = 'text-gray-800 dark:text-gray-200',
+    onClick,
+}: ActionButtonProps) {
+    return (
+        <button
+            onClick={onClick}
+            className={`relative flex flex-col items-center justify-center p-3 rounded-sm transition-colors ${colSpan === 2 ? 'col-span-2' : ''} ${color} ${textColor}`}
+        >
+            {FKey && <span className="absolute top-1 left-1 text-[10px] opacity-60">{FKey}</span>}
+            {Icon && <Icon className="w-6 h-6 mb-1" />}
+            <span className="text-xs font-semibold">{label}</span>
+        </button>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\CartTable.tsx
+================================================================
+
+import { Boxes, X } from 'lucide-react';
+import type { CartItem, Product } from './types';
+
+type CartTableProps = {
+    cart: CartItem[];
+    selectedItemId: number | null;
+    editingPriceItemId: number | null;
+    subtotal: number;
+    invoiceDiscount: number;
+    tax: number;
+    total: number;
+    onSelectRow: (id: number) => void;
+    onStartPriceEdit: (id: number) => void;
+    onStopPriceEdit: () => void;
+    onPriceListChange: (id: number, key: string) => void;
+    onRemoveItem: (id: number) => void;
+    onQuickAddFromEmpty: (product: Product) => void;
+    products: Product[];
+};
+
+export default function CartTable({
+    cart,
+    selectedItemId,
+    editingPriceItemId,
+    subtotal,
+    invoiceDiscount,
+    tax,
+    total,
+    onSelectRow,
+    onStartPriceEdit,
+    onStopPriceEdit,
+    onPriceListChange,
+    onRemoveItem,
+    onQuickAddFromEmpty,
+    products,
+}: CartTableProps) {
+    return (
+        <>
+            <div className="grid grid-cols-13 gap-4 px-4 py-3 bg-gray-100 dark:bg-[#1a1a1a] border-b border-gray-300 dark:border-pos-border text-sm font-semibold text-gray-800 dark:text-gray-200">
+                <div className="col-span-6">اسم الصنف</div>
+                <div className="col-span-2 text-center">الكمية</div>
+                <div className="col-span-2 text-center">السعر</div>
+                <div className="col-span-2 text-left">المجموع</div>
+                <div className="col-span-1" />
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-white dark:bg-pos-dark p-2">
+                {cart.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                        <Boxes className="w-16 h-16 mb-4 opacity-20" />
+                        <p>لا توجد أصناف في الفاتورة</p>
+                        <div className="mt-8 flex gap-2">
+                            {products.map((p) => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => onQuickAddFromEmpty(p)}
+                                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                >
+                                    إضافة {p.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    cart.map((item, index) => (
+                        <div
+                            key={item.id}
+                            onClick={() => onSelectRow(item.id)}
+                            className={`grid grid-cols-13 gap-4 px-2 py-3 border-b border-gray-200 dark:border-gray-800 items-center group cursor-pointer text-gray-800 dark:text-gray-200 ${selectedItemId === item.id
+                                    ? 'bg-blue-100 dark:bg-blue-900/40'
+                                    : 'hover:bg-gray-50 dark:hover:bg-pos-dark-hover'
+                                }`}
+                        >
+                            <div className="col-span-6 flex flex-col">
+                                <span className="font-bold text-sm text-green-700 dark:text-green-500">{item.name}</span>
+                                <span className="text-[10px] text-gray-500">#{index + 1} 15:58 {item.sku}</span>
+                                {item.note && <span className="text-[10px] text-amber-600 dark:text-amber-400">{item.note}</span>}
+                            </div>
+
+                            <div className="col-span-2 text-center text-sm font-bold">{item.quantity}</div>
+
+                            <div className="col-span-2 text-center text-sm">
+                                {editingPriceItemId === item.id ? (
+                                    <select
+                                        autoFocus
+                                        className="w-full bg-white dark:bg-pos-dark-panel border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-gray-800 dark:text-gray-100"
+                                        value={item.selectedPriceKey}
+                                        onChange={(e) => onPriceListChange(item.id, e.target.value)}
+                                        onBlur={onStopPriceEdit}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {item.priceLists.map((list) => (
+                                            <option key={list.key} value={list.key}>
+                                                {list.label} - {list.price.toFixed(2)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onStartPriceEdit(item.id);
+                                        }}
+                                        className="underline decoration-dotted underline-offset-4 hover:text-blue-600"
+                                    >
+                                        {item.price.toFixed(2)}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="col-span-2 text-left text-sm font-bold">{(item.price * item.quantity).toFixed(2)}</div>
+
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveItem(item.id);
+                                }}
+                                className={`col-span-1 justify-self-center h-7 w-7 rounded-full border border-red-300/80 dark:border-red-800/80 bg-red-50/70 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center transition-all ${selectedItemId === item.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
+                                    }`}
+                                aria-label="حذف الصنف"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            <div className="bg-gray-100 dark:bg-[#1a1a1a] border-t border-gray-300 dark:border-pos-border p-4 shrink-0">
+                <div className="flex justify-between items-center mb-1 text-sm text-gray-600 dark:text-gray-400">
+                    <span>المجموع</span>
+                    <span>{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-1 text-sm text-red-600 dark:text-red-400">
+                    <span>الخصم</span>
+                    <span>-{invoiceDiscount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2 pb-2 border-b border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
+                    <span>ضريبة</span>
+                    <span>{tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-2xl font-bold text-gray-900 dark:text-white">
+                    <span>الإجمالي</span>
+                    <span>{total.toFixed(2)}</span>
+                </div>
+            </div>
+        </>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\ConfirmModal.tsx
+================================================================
+
+type ConfirmModalProps = {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDangerous?: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+};
+
+export default function ConfirmModal({
+  open,
+  title,
+  message,
+  confirmText = 'تأكيد',
+  cancelText = 'إلغاء',
+  isDangerous = false,
+  onClose,
+  onConfirm,
+}: ConfirmModalProps) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="pos-modal-card w-full max-w-xs rounded-sm border border-gray-300 dark:border-[#3d3d3d] p-4">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mt-3 mb-6">{message}</p>
+
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-sm border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-[#353535] transition"
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className={`px-4 py-2 rounded-sm text-white font-medium transition ${
+              isDangerous
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================
+File Path: app\components\pos\constants.ts
+================================================================
+
+import { Barcode, Hash, SearchCode, Tag } from 'lucide-react';
+import type { ElementType } from 'react';
+import type { Product, SearchMode } from './types';
+
+export const DUMMY_PRODUCTS: Product[] = [
+    {
+        id: 1,
+        name: 'روله 1.5',
+        number: '1001',
+        barcode: '6281001000015',
+        price: 100.0,
+        sku: 'SKU: 1',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 100.0 },
+            { key: 'wholesale', label: 'جملة', price: 92.0 },
+            { key: 'vip', label: 'VIP', price: 88.0 },
+        ],
+    },
+    {
+        id: 2,
+        name: 'دهان بلاستيك',
+        number: '1002',
+        barcode: '6281001000022',
+        price: 250.0,
+        sku: 'SKU: 2',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 250.0 },
+            { key: 'wholesale', label: 'جملة', price: 235.0 },
+            { key: 'vip', label: 'VIP', price: 225.0 },
+        ],
+    },
+    {
+        id: 3,
+        name: 'فرشاة تلوين',
+        number: '1003',
+        barcode: '6281001000039',
+        price: 25.0,
+        sku: 'SKU: 3',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 25.0 },
+            { key: 'wholesale', label: 'جملة', price: 22.0 },
+            { key: 'vip', label: 'VIP', price: 20.0 },
+        ],
+    },
+    {
+        id: 4,
+        name: 'معجون جدران',
+        number: '1004',
+        barcode: '6281001000046',
+        price: 45.0,
+        sku: 'SKU: 4',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 45.0 },
+            { key: 'wholesale', label: 'جملة', price: 41.0 },
+            { key: 'vip', label: 'VIP', price: 39.0 },
+        ],
+    },
+    {
+        id: 5,
+        name: 'شطرطون لاصق',
+        number: '1005',
+        barcode: '6281001000053',
+        price: 12.5,
+        sku: 'SKU: 5',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 12.5 },
+            { key: 'wholesale', label: 'جملة', price: 11.2 },
+            { key: 'vip', label: 'VIP', price: 10.8 },
+        ],
+    },
+    {
+        id: 6,
+        name: 'بخاخ دهان',
+        number: '1006',
+        barcode: '6281001000060',
+        price: 30.0,
+        sku: 'SKU: 6',
+        priceLists: [
+            { key: 'retail', label: 'تجزئة', price: 30.0 },
+            { key: 'wholesale', label: 'جملة', price: 27.0 },
+            { key: 'vip', label: 'VIP', price: 25.0 },
+        ],
+    },
+];
+
+export const SEARCH_OPTIONS: Array<{ key: SearchMode; label: string; icon: ElementType }> = [
+    { key: 'all', label: 'الكل', icon: SearchCode },
+    { key: 'name', label: 'الاسم', icon: Tag },
+    { key: 'number', label: 'الرقم', icon: Hash },
+    { key: 'barcode', label: 'الباركود', icon: Barcode },
+];
+
+
+================================================================
+File Path: app\components\pos\DiscountModal.tsx
+================================================================
+
+import { ArrowLeft, CornerDownLeft, Trash2 } from 'lucide-react';
+
+type DiscountScope = 'item' | 'invoice';
+type DiscountType = 'percent' | 'amount';
+
+type DiscountModalProps = {
+    open: boolean;
+    hasSelectedItem: boolean;
+    scope: DiscountScope;
+    type: DiscountType;
+    value: string;
+    itemName?: string;
+    onScopeChange: (scope: DiscountScope) => void;
+    onTypeChange: (type: DiscountType) => void;
+    onValueChange: (value: string) => void;
+    onClose: () => void;
+    onSubmit: () => void;
+    onRemoveDiscount: () => void;
+};
+
+const KEYS: Array<Array<{ key: string; type?: 'digit' | 'backspace' | 'escape' | 'enter' | 'dot' | 'minus' | 'empty' }>> = [
+    [
+        { key: '1', type: 'digit' },
+        { key: '2', type: 'digit' },
+        { key: '3', type: 'digit' },
+        { key: 'backspace', type: 'backspace' },
+    ],
+    [
+        { key: '4', type: 'digit' },
+        { key: '5', type: 'digit' },
+        { key: '6', type: 'digit' },
+        { key: 'esc', type: 'escape' },
+    ],
+    [
+        { key: '7', type: 'digit' },
+        { key: '8', type: 'digit' },
+        { key: '9', type: 'digit' },
+        { key: 'enter', type: 'enter' },
+    ],
+    [
+        { key: '-', type: 'minus' },
+        { key: '0', type: 'digit' },
+        { key: '.', type: 'dot' },
+        { key: 'empty', type: 'empty' },
+    ],
+];
+
+export default function DiscountModal({
+    open,
+    hasSelectedItem,
+    scope,
+    type,
+    value,
+    itemName,
+    onScopeChange,
+    onTypeChange,
+    onValueChange,
+    onClose,
+    onSubmit,
+    onRemoveDiscount,
+}: DiscountModalProps) {
+    if (!open) return null;
+
+    const appendValue = (next: string) => {
+        if (value === '0' && next !== '.') {
+            onValueChange(next);
+            return;
+        }
+        onValueChange(`${value}${next}`);
+    };
+
+    const handleKey = (kind: string | undefined, key: string) => {
+        switch (kind) {
+            case 'digit':
+                appendValue(key);
+                break;
+            case 'dot':
+                if (!value.includes('.')) appendValue('.');
+                break;
+            case 'minus':
+                if (!value.startsWith('-')) onValueChange(`-${value || '0'}`);
+                break;
+            case 'backspace':
+                onValueChange(value.length > 1 ? value.slice(0, -1) : '0');
+                break;
+            case 'escape':
+                onClose();
+                break;
+            case 'enter':
+                onSubmit();
+                break;
+            case 'empty':
+                break;
+            default:
+                break;
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+            <div className="pos-modal-card w-full max-w-xs rounded-sm border border-gray-300 dark:border-[#3d3d3d] p-0 overflow-hidden">
+                <div className="grid grid-cols-2 border-b border-gray-300 dark:border-[#4b4b4b]">
+                    <button
+                        onClick={() => onScopeChange('item')}
+                        className={`py-3 text-xl font-semibold border-b-2 ${scope === 'item' ? 'text-sky-500 border-sky-500' : 'text-gray-700 dark:text-gray-300 border-transparent'} ${!hasSelectedItem ? 'opacity-40 cursor-not-allowed' : ''
+                            }`}
+                        disabled={!hasSelectedItem}
+                    >
+                        خصم للصنف
+                    </button>
+                    <button
+                        onClick={() => onScopeChange('invoice')}
+                        className={`py-3 text-xl font-semibold border-b-2 ${scope === 'invoice' ? 'text-sky-500 border-sky-500' : 'text-gray-700 dark:text-gray-300 border-transparent'}`}
+                    >
+                        خصم للسلة
+                    </button>
+                </div>
+
+                <div className="p-4">
+                    <h3 className="text-center text-2xl leading-tight font-medium">تطبيق خصم سلة التسوق</h3>
+                    <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-1 mb-3">{scope === 'item' ? itemName || 'اختر صنفاً' : 'جميع أصناف الفاتورة'}</p>
+
+                    <div className="mx-auto w-fit flex rounded border border-gray-400 dark:border-[#5b5b5b] overflow-hidden mb-5">
+                        <button
+                            onClick={() => onTypeChange('percent')}
+                            className={`h-11 w-20 text-2xl font-bold ${type === 'percent' ? 'bg-sky-500 text-white' : 'bg-transparent'}`}
+                        >
+                            %
+                        </button>
+                        <button
+                            onClick={() => onTypeChange('amount')}
+                            className={`h-11 w-20 text-2xl font-bold ${type === 'amount' ? 'bg-sky-500 text-white' : 'bg-transparent'}`}
+                        >
+                            $
+                        </button>
+                    </div>
+
+                    <div className="text-center text-2xl mb-2">الخصم</div>
+
+                    <div className="relative mb-4 border-b-2 border-sky-500">
+                        <input
+                            autoFocus
+                            value={value}
+                            onChange={(e) => onValueChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') onSubmit();
+                                if (e.key === 'Escape') onClose();
+                            }}
+                            className="w-full h-12 bg-transparent pr-3 pl-14 text-right text-4xl font-semibold text-[#0b5ea8] dark:text-[#8fd3ff] focus:outline-none"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-4xl font-bold text-[#0b5ea8] dark:text-[#8fd3ff]">
+                            {type === 'percent' ? '%' : '$'}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-px bg-[#444] border border-[#444]">
+                        {KEYS.flat().map((keyDef) => (
+                            <button
+                                key={keyDef.key}
+                                disabled={keyDef.type === 'empty'}
+                                onClick={() => handleKey(keyDef.type, keyDef.key)}
+                                className={`pos-key-btn ${keyDef.type === 'enter' ? 'pos-key-btn-enter' : ''} ${keyDef.type === 'empty' ? 'pos-key-btn-empty' : ''}`}
+                            >
+                                {keyDef.type === 'backspace' && <ArrowLeft className="w-5 h-5" />}
+                                {keyDef.type === 'enter' && <CornerDownLeft className="w-6 h-6" />}
+                                {keyDef.type === 'escape' && <span className="text-base">esc</span>}
+                                {keyDef.type !== 'backspace' && keyDef.type !== 'enter' && keyDef.type !== 'escape' && keyDef.type !== 'empty' && keyDef.key}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <button
+                    onClick={onRemoveDiscount}
+                    className="h-14 w-full border-t border-gray-300 dark:border-[#4b4b4b] flex items-center justify-center gap-2 text-xl"
+                >
+                    <Trash2 className="w-5 h-5" />
+                    <span>إزالة الخصم</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\HeldInvoicesModal.tsx
+================================================================
+
+import { Trash2 } from 'lucide-react';
+import type { CartItem } from './types';
+
+type HeldInvoice = {
+  id: string;
+  cart: CartItem[];
+  timestamp: number;
+};
+
+type HeldInvoicesModalProps = {
+  open: boolean;
+  heldInvoices: HeldInvoice[];
+  onClose: () => void;
+  onSelectInvoice: (invoice: HeldInvoice) => void;
+  onRemoveInvoice: (id: string) => void;
+};
+
+export default function HeldInvoicesModal({
+  open,
+  heldInvoices,
+  onClose,
+  onSelectInvoice,
+  onRemoveInvoice,
+}: HeldInvoicesModalProps) {
+  if (!open) return null;
+
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="pos-modal-card w-full max-w-sm rounded-sm border border-gray-300 dark:border-[#3d3d3d] p-4">
+        <h3 className="text-lg font-semibold mb-4">الفواتير المعلقة</h3>
+
+        {heldInvoices.length === 0 ? (
+          <p className="text-center text-gray-600 dark:text-gray-400 py-8">لا توجد فواتير معلقة</p>
+        ) : (
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {heldInvoices.map((invoice) => {
+              const itemCount = invoice.cart.reduce((sum, item) => sum + item.quantity, 0);
+              const total = invoice.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+              return (
+                <div
+                  key={invoice.id}
+                  className="flex items-center justify-between p-3 border border-gray-300 dark:border-[#4b4b4b] rounded-sm hover:bg-gray-100 dark:hover:bg-[#353535] transition cursor-pointer"
+                >
+                  <button
+                    onClick={() => {
+                      onSelectInvoice(invoice);
+                      onClose();
+                    }}
+                    className="flex-1 text-right"
+                  >
+                    <div className="text-sm font-semibold text-[#0b5ea8] dark:text-[#8fd3ff]">
+                      {itemCount} صنف
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatTime(invoice.timestamp)} - {total.toFixed(2)} ر.س
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => onRemoveInvoice(invoice.id)}
+                    className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-sm transition text-red-600 dark:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-2 rounded-sm border border-gray-300 dark:border-gray-600">
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================
+File Path: app\components\pos\NotificationManager.tsx
+================================================================
+
+import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
+
+export type Notification = {
+  id: string;
+  message: string;
+  type: NotificationType;
+  duration?: number;
+};
+
+type NotificationManagerProps = {
+  notifications: Notification[];
+  onRemove: (id: string) => void;
+};
+
+const getStyles = (type: NotificationType) => {
+  switch (type) {
+    case 'success':
+      return {
+        bg: 'bg-green-50 dark:bg-green-900/30',
+        border: 'border-green-200 dark:border-green-800',
+        text: 'text-green-800 dark:text-green-200',
+        icon: 'text-green-600 dark:text-green-400',
+      };
+    case 'error':
+      return {
+        bg: 'bg-red-50 dark:bg-red-900/30',
+        border: 'border-red-200 dark:border-red-800',
+        text: 'text-red-800 dark:text-red-200',
+        icon: 'text-red-600 dark:text-red-400',
+      };
+    case 'warning':
+      return {
+        bg: 'bg-yellow-50 dark:bg-yellow-900/30',
+        border: 'border-yellow-200 dark:border-yellow-800',
+        text: 'text-yellow-800 dark:text-yellow-200',
+        icon: 'text-yellow-600 dark:text-yellow-400',
+      };
+    case 'info':
+    default:
+      return {
+        bg: 'bg-blue-50 dark:bg-blue-900/30',
+        border: 'border-blue-200 dark:border-blue-800',
+        text: 'text-blue-800 dark:text-blue-200',
+        icon: 'text-blue-600 dark:text-blue-400',
+      };
+  }
+};
+
+export function NotificationManager({ notifications, onRemove }: NotificationManagerProps) {
+  return (
+    <div className="fixed top-4 right-4 z-40 space-y-2 max-w-sm">
+      {notifications.map((notif) => (
+        <NotificationItem key={notif.id} notification={notif} onRemove={onRemove} />
+      ))}
+    </div>
+  );
+}
+
+function NotificationItem({
+  notification,
+  onRemove,
+}: {
+  notification: Notification;
+  onRemove: (id: string) => void;
+}) {
+  const [isVisible, setIsVisible] = useState(true);
+  const styles = getStyles(notification.type);
+  const duration = notification.duration || 3500;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => onRemove(notification.id), 300);
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [notification.id, duration, onRemove]);
+
+  return (
+    <div
+      className={`transform transition-all duration-300 ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      }`}
+    >
+      <div
+        className={`flex items-start gap-3 p-4 rounded-sm border ${styles.bg} ${styles.border}`}
+      >
+        <div className={`shrink-0 w-5 h-5 ${styles.icon}`}>
+          {notification.type === 'success' && (
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+          {notification.type === 'error' && (
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          )}
+          {notification.type === 'warning' && (
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          )}
+          {notification.type === 'info' && (
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          )}
+        </div>
+        <div className={`flex-1 ${styles.text} text-sm font-medium`}>{notification.message}</div>
+        <button
+          onClick={() => {
+            setIsVisible(false);
+            setTimeout(() => onRemove(notification.id), 300);
+          }}
+          className={`shrink-0 ${styles.icon} hover:opacity-70 transition`}
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================
+File Path: app\components\pos\QuantityModal.tsx
+================================================================
+
+import { ArrowLeft, CornerDownLeft } from 'lucide-react';
+
+type QuantityModalProps = {
+    open: boolean;
+    value: string;
+    productName?: string;
+    onValueChange: (value: string) => void;
+    onClose: () => void;
+    onSubmit: () => void;
+};
+
+const KEYS: Array<Array<{ key: string; type?: 'digit' | 'backspace' | 'escape' | 'enter' | 'dot' | 'minus' | 'empty' }>> = [
+    [
+        { key: '1', type: 'digit' },
+        { key: '2', type: 'digit' },
+        { key: '3', type: 'digit' },
+        { key: 'backspace', type: 'backspace' },
+    ],
+    [
+        { key: '4', type: 'digit' },
+        { key: '5', type: 'digit' },
+        { key: '6', type: 'digit' },
+        { key: 'esc', type: 'escape' },
+    ],
+    [
+        { key: '7', type: 'digit' },
+        { key: '8', type: 'digit' },
+        { key: '9', type: 'digit' },
+        { key: 'enter', type: 'enter' },
+    ],
+    [
+        { key: '-', type: 'minus' },
+        { key: '0', type: 'digit' },
+        { key: '.', type: 'dot' },
+        { key: 'empty', type: 'empty' },
+    ],
+];
+
+export default function QuantityModal({
+    open,
+    value,
+    productName,
+    onValueChange,
+    onClose,
+    onSubmit,
+}: QuantityModalProps) {
+    if (!open) return null;
+
+    const appendValue = (next: string) => {
+        if (value === '0' && next !== '.') {
+            onValueChange(next);
+            return;
+        }
+        onValueChange(`${value}${next}`);
+    };
+
+    const handleKey = (type: string | undefined, key: string) => {
+        switch (type) {
+            case 'digit':
+                appendValue(key);
+                break;
+            case 'dot':
+                if (!value.includes('.')) appendValue('.');
+                break;
+            case 'minus':
+                if (!value.startsWith('-')) onValueChange(`-${value || '0'}`);
+                break;
+            case 'backspace':
+                onValueChange(value.length > 1 ? value.slice(0, -1) : '0');
+                break;
+            case 'escape':
+                onClose();
+                break;
+            case 'enter':
+                onSubmit();
+                break;
+            case 'empty':
+                break;
+            default:
+                break;
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+            <div
+                className="pos-modal-card w-full rounded-sm p-3 border border-gray-300 dark:border-[#3d3d3d]"
+                style={{ maxWidth: '260px' }}
+            >
+                <h3 className="text-center text-2xl font-semibold leading-tight">تغيير الكمية</h3>
+                <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-1 mb-3">
+                    ادخل كمية الصنف التالي
+                    {productName ? `: ${productName}` : ''}
+                </p>
+
+                <div className="relative mb-3">
+                    <input
+                        autoFocus
+                        value={value}
+                        onChange={(e) => onValueChange(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') onSubmit();
+                            if (e.key === 'Escape') onClose();
+                        }}
+                        className="w-full h-12 bg-white dark:bg-[#212224] border border-[#2487c9] rounded-sm pr-3 pl-10 text-right text-4xl font-semibold text-[#0b5ea8] dark:text-[#8fd3ff] focus:outline-none"
+                    />
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#0b5ea8] dark:text-[#8fd3ff] font-bold text-3xl leading-none">|</span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-px bg-[#444] border border-[#444]">
+                    {KEYS.flat().map((keyDef) => (
+                        <button
+                            key={keyDef.key}
+                            disabled={keyDef.type === 'empty'}
+                            onClick={() => handleKey(keyDef.type, keyDef.key)}
+                            className={`pos-key-btn ${keyDef.type === 'enter' ? 'pos-key-btn-enter' : ''} ${keyDef.type === 'empty' ? 'pos-key-btn-empty' : ''}`}
+                        >
+                            {keyDef.type === 'backspace' && <ArrowLeft className="w-5 h-5" />}
+                            {keyDef.type === 'enter' && <CornerDownLeft className="w-6 h-6" />}
+                            {keyDef.type === 'escape' && <span className="text-base">esc</span>}
+                            {keyDef.type !== 'backspace' && keyDef.type !== 'enter' && keyDef.type !== 'escape' && keyDef.type !== 'empty' && keyDef.key}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\SearchBarRow.tsx
+================================================================
+
+import { Search } from 'lucide-react';
+import type { ElementType } from 'react';
+import type { Product, SearchMode } from './types';
+
+type SearchOption = {
+    key: SearchMode;
+    label: string;
+    icon: ElementType;
+};
+
+type SearchBarRowProps = {
+    searchOptions: SearchOption[];
+    searchMode: SearchMode;
+    onSearchModeChange: (mode: SearchMode) => void;
+    searchQuery: string;
+    onSearchQueryChange: (query: string) => void;
+    onSearchFocusedChange: (focused: boolean) => void;
+    showSearchDropdown: boolean;
+    filteredProducts: Product[];
+    onSelectProduct: (product: Product) => void;
+};
+
+export default function SearchBarRow({
+    searchOptions,
+    searchMode,
+    onSearchModeChange,
+    searchQuery,
+    onSearchQueryChange,
+    onSearchFocusedChange,
+    showSearchDropdown,
+    filteredProducts,
+    onSelectProduct,
+}: SearchBarRowProps) {
+    return (
+        <div className="px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] border-b border-gray-300 dark:border-pos-border">
+            <div className="flex items-center gap-2 w-full min-w-0">
+                {searchOptions.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        onClick={() => onSearchModeChange(key)}
+                        className={`h-10 min-w-16.5 px-2 rounded border flex flex-col items-center justify-center transition-colors ${searchMode === key
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white dark:bg-pos-dark-panel border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-pos-dark-hover'
+                            }`}
+                    >
+                        <Icon className="w-4 h-4 mb-0.5" />
+                        <span className="text-[10px] font-bold leading-none">{label}</span>
+                    </button>
+                ))}
+
+                <div className="relative w-full flex items-center">
+                    <Search className="w-5 h-5 absolute right-3 text-gray-500" />
+                    <input
+                        type="text"
+                        placeholder="ابحث بالاسم أو الرقم أو الباركود"
+                        className="w-full h-10 bg-white dark:bg-pos-dark-panel border border-gray-300 dark:border-gray-600 rounded px-11 py-2 text-base focus:outline-none focus:border-blue-500 text-gray-800 dark:text-gray-200 placeholder-gray-500"
+                        value={searchQuery}
+                        onChange={(e) => onSearchQueryChange(e.target.value)}
+                        onFocus={() => onSearchFocusedChange(true)}
+                        onBlur={() => onSearchFocusedChange(false)}
+                    />
+
+                    {showSearchDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-pos-dark-panel shadow-lg z-30 max-h-64 overflow-y-auto">
+                            {filteredProducts.length > 0 ? (
+                                filteredProducts.map((product) => (
+                                    <button
+                                        key={product.id}
+                                        onMouseDown={() => onSelectProduct(product)}
+                                        className="w-full px-3 py-2 text-right border-b last:border-b-0 border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-pos-dark-hover"
+                                    >
+                                        <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{product.name}</div>
+                                        <div className="text-[11px] text-gray-500">#{product.number} | {product.barcode}</div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-gray-500">لا توجد نتائج مطابقة</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\SidePanel.tsx
+================================================================
+
+import {
+    ArrowLeftRight,
+    Banknote,
+    CreditCard,
+    Lock,
+    MessageSquare,
+    MoreHorizontal,
+    PackagePlus,
+    Percent,
+    Plus,
+    ScrollText,
+    SearchCode,
+    Trash2,
+    Undo2,
+    Users,
+    X,
+} from 'lucide-react';
+import ActionButton from './ActionButton';
+import type { PaymentMethod } from './types';
+
+type SidePanelProps = {
+    paymentMethod: PaymentMethod;
+    onPaymentMethodChange: (method: PaymentMethod) => void;
+    onAction: (action: string) => void;
+    onClearInvoice: () => void;
+};
+
+export default function SidePanel({
+    paymentMethod,
+    onPaymentMethodChange,
+    onAction,
+    onClearInvoice,
+}: SidePanelProps) {
+    return (
+        <div className="w-85 bg-gray-200 dark:bg-pos-dark-panel flex flex-col shrink-0">
+            <div className="grid grid-cols-4 gap-px bg-gray-300 dark:bg-pos-border p-px">
+                <ActionButton FKey="" icon={X} label="حذف" onClick={() => onAction('delete')} />
+                <ActionButton FKey="F3" icon={SearchCode} label="البحث" onClick={() => onAction('search')} />
+                <ActionButton FKey="F4" icon={PackagePlus} label="الكمية" onClick={() => onAction('quantity')} />
+                <ActionButton FKey="F8" icon={Plus} label="فاتورة جديدة" onClick={() => onAction('new-invoice')} />
+            </div>
+
+            <div className="grid grid-cols-3 gap-px bg-gray-300 dark:bg-pos-border p-px">
+                <ActionButton
+                    FKey="F12"
+                    icon={Banknote}
+                    label="Cash"
+                    onClick={() => onPaymentMethodChange('cash')}
+                    color={paymentMethod === 'cash' ? 'bg-white dark:bg-pos-dark border-b-2 border-green-500' : 'bg-white dark:bg-pos-dark'}
+                />
+                <ActionButton
+                    icon={CreditCard}
+                    label="Card"
+                    onClick={() => onPaymentMethodChange('card')}
+                    color={paymentMethod === 'card' ? 'bg-white dark:bg-pos-dark border-b-2 border-blue-500' : 'bg-white dark:bg-pos-dark'}
+                />
+                <ActionButton
+                    icon={ScrollText}
+                    label="Check"
+                    onClick={() => onPaymentMethodChange('check')}
+                    color={paymentMethod === 'check' ? 'bg-white dark:bg-pos-dark border-b-2 border-blue-400' : 'bg-white dark:bg-pos-dark'}
+                />
+            </div>
+
+            <div className="flex-1 flex items-center justify-center relative bg-gray-100 dark:bg-pos-dark-panel text-gray-800 dark:text-white">
+                <div className="text-center opacity-10 flex flex-col items-center">
+                    <div className="w-24 h-24 border-4 border-current rounded-xl rotate-45 flex items-center justify-center mb-6">
+                        <span className="-rotate-45 text-4xl font-bold">p</span>
+                    </div>
+                    <span className="text-2xl font-bold tracking-widest uppercase">PosFace</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-px bg-gray-300 dark:bg-pos-border p-px pb-0">
+                <ActionButton icon={CreditCard} label="درج النقد" onClick={() => onAction('drawer')} />
+                <ActionButton icon={Users} label="محلي" onClick={() => onAction('local')} />
+                <ActionButton icon={Users} label="Customer" colSpan={2} onClick={() => onAction('customer')} />
+
+                <ActionButton FKey="F2" icon={Percent} label="الخصم" onClick={() => onAction('discount')} />
+                <ActionButton icon={MessageSquare} label="ملاحظة" onClick={() => onAction('note')} />
+                <ActionButton icon={Undo2} label="استرداد" onClick={() => onAction('refund')} />
+                <ActionButton FKey="F9" icon={Lock} label="تعليق الفاتورة" onClick={() => onAction('hold')} />
+
+                <ActionButton icon={ArrowLeftRight} label="تحويل" FKey="F7" onClick={() => onAction('transfer')} />
+                <ActionButton icon={MoreHorizontal} label="" onClick={() => onAction('more')} />
+
+                <button
+                    onClick={onClearInvoice}
+                    className="col-span-1 bg-red-600 hover:bg-red-700 text-white flex flex-col items-center justify-center p-3 transition-colors relative"
+                >
+                    <Trash2 className="w-6 h-6 mb-1" />
+                    <span className="text-xs font-bold">إلغاء الفاتورة</span>
+                </button>
+
+                <button
+                    onClick={() => onAction('credit')}
+                    className="col-span-1 bg-green-600 hover:bg-green-700 text-white flex flex-col items-center justify-center p-3 transition-colors relative"
+                >
+                    <span className="absolute top-1 left-1 text-[10px] opacity-80">F10</span>
+                    <span className="text-xl font-bold mb-1">F10</span>
+                    <span className="text-xs font-bold">آجل</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+
+================================================================
+File Path: app\components\pos\types.ts
+================================================================
+
+export type PriceList = {
+    key: string;
+    label: string;
+    price: number;
+};
+
+export type Product = {
+    id: number;
+    name: string;
+    number: string;
+    barcode: string;
+    price: number;
+    sku: string;
+    priceLists: PriceList[];
+};
+
+export type SearchMode = 'all' | 'name' | 'number' | 'barcode';
+
+export type CartItem = Product & {
+    quantity: number;
+    selectedPriceKey: string;
+    discountPercent?: number;
+    discountType?: 'percent' | 'amount';
+    discountValue?: number;
+    note?: string;
+};
+
+export type PaymentMethod = 'cash' | 'card' | 'check';
+
+
+================================================================
+File Path: app\globals.css
+================================================================
+
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Define custom theme colors for our POS */
+@theme {
+  --color-pos-dark: #242424;
+  --color-pos-dark-panel: #1e1e1e;
+  --color-pos-dark-hover: #333333;
+  --color-pos-border: #404040;
+}
+
+@layer base {
+  body {
+    background-color: #f9fafb;
+    /* gray-50 */
+    color: #1f2937;
+    /* gray-800 */
+    transition-property: color, background-color;
+    transition-duration: 200ms;
+  }
+
+  .dark body {
+    background-color: var(--color-pos-dark);
+    color: #e5e7eb;
+    /* gray-200 */
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+}
+
+/* Shared POS modal look for light and dark themes */
+.pos-modal-card {
+  background: linear-gradient(180deg, #f7f7f8 0%, #eff1f3 100%);
+  color: #0f172a;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+}
+
+.dark .pos-modal-card {
+  background: linear-gradient(180deg, #2c2d2f 0%, #27282a 100%);
+  color: #f9fafb;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.pos-key-btn {
+  min-height: 60px;
+  background: #2f3133;
+  color: #f4f4f4;
+  border: 1px solid #4a4c50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 2rem;
+  line-height: 1;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.pos-key-btn:hover {
+  background: #3a3c3f;
+}
+
+.pos-key-btn:active {
+  transform: translateY(1px);
+}
+
+.pos-key-btn-enter {
+  font-size: 1.6rem;
+}
+
+.pos-key-btn-empty {
+  background: #35373a;
+  color: transparent;
+  cursor: default;
+}
+
+.pos-key-btn-empty:hover {
+  background: #35373a;
+}
+
+.dark .pos-key-btn-empty {
+  border-color: #4a4c50;
+}
+
+================================================================
+File Path: app\layout.tsx
+================================================================
+
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "./providers";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "PosFace - Aronium Clone",
+  description: "Next.js 14 POS System",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    // suppressHydrationWarning is needed for next-themes
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+
+================================================================
+File Path: app\page.tsx
+================================================================
+
+"use client";
+
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useEffect, useMemo, useState } from 'react';
+import CartTable from './components/pos/CartTable';
+import { DUMMY_PRODUCTS, SEARCH_OPTIONS } from './components/pos/constants';
+import DiscountModal from './components/pos/DiscountModal';
+import QuantityModal from './components/pos/QuantityModal';
+import SearchBarRow from './components/pos/SearchBarRow';
+import SidePanel from './components/pos/SidePanel';
+import HeldInvoicesModal from './components/pos/HeldInvoicesModal';
+import ConfirmModal from './components/pos/ConfirmModal';
+import { NotificationManager, type Notification } from './components/pos/NotificationManager';
+import type { CartItem, PaymentMethod, Product, SearchMode } from './components/pos/types';
+
+type HeldInvoice = {
+  id: string;
+  cart: CartItem[];
+  timestamp: number;
+};
+
+export default function PosFace() {
+    const [cart, setCart] = useState<CartItem[]>([{ ...DUMMY_PRODUCTS[0], quantity: 2, selectedPriceKey: 'retail' }]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchMode, setSearchMode] = useState<SearchMode>('all');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [editingPriceItemId, setEditingPriceItemId] = useState<number | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+    const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+    const [quantityInput, setQuantityInput] = useState('1');
+    const [activeModal, setActiveModal] = useState<null | 'note' | 'customer'>(null);
+    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+    const [discountScope, setDiscountScope] = useState<'item' | 'invoice'>('item');
+    const [discountType, setDiscountType] = useState<'percent' | 'amount'>('percent');
+    const [discountInput, setDiscountInput] = useState('0');
+    const [invoiceDiscountType, setInvoiceDiscountType] = useState<'percent' | 'amount'>('percent');
+    const [invoiceDiscountValue, setInvoiceDiscountValue] = useState(0);
+    const [noteInput, setNoteInput] = useState('');
+    const [customerName, setCustomerName] = useState('محلي');
+    const [customerInput, setCustomerInput] = useState('محلي');
+    const [heldCarts, setHeldCarts] = useState<HeldInvoice[]>([]);
+    const [showHeldInvoicesModal, setShowHeldInvoicesModal] = useState(false);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
+
+    const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration?: number) => {
+        const id = `notif-${Date.now()}`;
+        setNotifications((prev) => [...prev, { id, message, type, duration }]);
+    };
+
+    const removeNotification = (id: string) => {
+        setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+    };
+
+    const addToCart = (product: Product) => {
+        setCart((prev) => {
+            const existing = prev.find((item) => item.id === product.id);
+            if (existing) {
+                return prev.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+            }
+            return [...prev, { ...product, quantity: 1, selectedPriceKey: 'retail', discountPercent: 0, note: '' }];
+        });
+    };
+
+    const getBaseListPrice = (item: CartItem) => item.priceLists.find((list) => list.key === item.selectedPriceKey)?.price ?? item.price;
+    const applyUnitDiscount = (basePrice: number, type: 'percent' | 'amount', value: number) => {
+        if (type === 'percent') {
+            return Math.max(0, basePrice * (1 - value / 100));
+        }
+        return Math.max(0, basePrice - value);
+    };
+
+    const updateItemPriceFromList = (id: number, priceKey: string) => {
+        setCart((prev) =>
+            prev.map((item) => {
+                if (item.id !== id) return item;
+                const selected = item.priceLists.find((list) => list.key === priceKey);
+                if (!selected) return item;
+                const itemDiscountType = item.discountType ?? 'percent';
+                const itemDiscountValue = item.discountValue ?? 0;
+                const discountedPrice = applyUnitDiscount(selected.price, itemDiscountType, itemDiscountValue);
+                return { ...item, selectedPriceKey: selected.key, price: discountedPrice };
+            }),
+        );
+    };
+
+    const removeFromCart = (id: number) => {
+        setCart((prev) => prev.filter((item) => item.id !== id));
+        if (selectedItemId === id) setSelectedItemId(null);
+    };
+
+    const clearCart = () => {
+        setShowClearConfirm(true);
+    };
+
+    const confirmClearCart = () => {
+        setCart([]);
+        setSelectedItemId(null);
+        showNotification('تم إلغاء الفاتورة', 'success');
+    };
+
+    const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+    const invoiceDiscountAmount = useMemo(() => {
+        if (invoiceDiscountType === 'percent') {
+            const raw = subtotal * (invoiceDiscountValue / 100);
+            return Math.min(subtotal, Math.max(0, raw));
+        }
+        return Math.min(subtotal, Math.max(0, invoiceDiscountValue));
+    }, [subtotal, invoiceDiscountType, invoiceDiscountValue]);
+    const tax = 0;
+    const total = subtotal - invoiceDiscountAmount + tax;
+
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filteredProducts = useMemo(() => {
+        return DUMMY_PRODUCTS.filter((product) => {
+            if (!normalizedQuery) return true;
+
+            if (searchMode === 'name') return product.name.toLowerCase().includes(normalizedQuery);
+            if (searchMode === 'number') return product.number.toLowerCase().includes(normalizedQuery);
+            if (searchMode === 'barcode') return product.barcode.toLowerCase().includes(normalizedQuery);
+
+            return (
+                product.name.toLowerCase().includes(normalizedQuery) ||
+                product.number.toLowerCase().includes(normalizedQuery) ||
+                product.barcode.toLowerCase().includes(normalizedQuery)
+            );
+        });
+    }, [normalizedQuery, searchMode]);
+
+    const showSearchDropdown = isSearchFocused && normalizedQuery.length > 0;
+    const selectedItem = cart.find((item) => item.id === selectedItemId) ?? null;
+
+    const openQuantityModal = () => {
+        if (!selectedItem) {
+            showNotification('اختر صنفاً أولاً', 'warning');
+            return;
+        }
+        setQuantityInput(String(selectedItem.quantity));
+        setIsQuantityModalOpen(true);
+    };
+
+    const applyQuantityChange = () => {
+        if (!selectedItem) {
+            setIsQuantityModalOpen(false);
+            return;
+        }
+
+        const nextQty = Number(quantityInput);
+        if (!Number.isFinite(nextQty) || nextQty <= 0) {
+            showNotification('الكمية يجب أن تكون أكبر من صفر', 'error');
+            return;
+        }
+
+        setCart((prev) => prev.map((item) => (item.id === selectedItem.id ? { ...item, quantity: nextQty } : item)));
+        setIsQuantityModalOpen(false);
+    };
+
+    const openDiscountModal = () => {
+        if (selectedItem) {
+            setDiscountScope('item');
+            setDiscountType(selectedItem.discountType ?? 'percent');
+            setDiscountInput(String(selectedItem.discountValue ?? 0));
+        } else {
+            setDiscountScope('invoice');
+            setDiscountType(invoiceDiscountType);
+            setDiscountInput(String(invoiceDiscountValue));
+        }
+        setIsDiscountModalOpen(true);
+    };
+
+    const applyDiscount = () => {
+        const value = Number(discountInput);
+        if (!Number.isFinite(value) || value < 0) {
+            showNotification('الخصم يجب أن يكون رقماً صحيحاً', 'error');
+            return;
+        }
+
+        if (discountType === 'percent' && value > 100) {
+            showNotification('نسبة الخصم يجب أن تكون من 0 إلى 100', 'error');
+            return;
+        }
+
+        if (discountScope === 'invoice') {
+            setInvoiceDiscountType(discountType);
+            setInvoiceDiscountValue(value);
+            setIsDiscountModalOpen(false);
+            showNotification('تم تطبيق الخصم', 'success');
+            return;
+        }
+
+        if (!selectedItem) {
+            showNotification('اختر صنفاً أولاً', 'warning');
+            return;
+        }
+
+        setCart((prev) =>
+            prev.map((item) => {
+                if (item.id !== selectedItem.id) return item;
+                const basePrice = getBaseListPrice(item);
+                return {
+                    ...item,
+                    discountPercent: discountType === 'percent' ? value : undefined,
+                    discountType,
+                    discountValue: value,
+                    price: applyUnitDiscount(basePrice, discountType, value),
+                };
+            }),
+        );
+        setIsDiscountModalOpen(false);
+    };
+
+    const removeDiscount = () => {
+        if (discountScope === 'invoice') {
+            setInvoiceDiscountValue(0);
+            setIsDiscountModalOpen(false);
+            return;
+        }
+
+        if (!selectedItem) {
+            window.alert('اختر صنفاً أولاً');
+            return;
+        }
+
+        setCart((prev) =>
+            prev.map((item) => {
+                if (item.id !== selectedItem.id) return item;
+                const basePrice = getBaseListPrice(item);
+                return {
+                    ...item,
+                    discountPercent: 0,
+                    discountType: 'percent',
+                    discountValue: 0,
+                    price: basePrice,
+                };
+            }),
+        );
+        setIsDiscountModalOpen(false);
+    };
+
+    const openNoteModal = () => {
+        if (!selectedItem) {
+            showNotification('اختر صنفاً أولاً', 'warning');
+            return;
+        }
+        setNoteInput(selectedItem.note ?? '');
+        setActiveModal('note');
+    };
+
+    const applyNote = () => {
+        if (!selectedItem) {
+            setActiveModal(null);
+            return;
+        }
+        setCart((prev) => prev.map((item) => (item.id === selectedItem.id ? { ...item, note: noteInput.trim() } : item)));
+        setActiveModal(null);
+    };
+
+    const openCustomerModal = () => {
+        setCustomerInput(customerName);
+        setActiveModal('customer');
+    };
+
+    const applyCustomer = () => {
+        const nextName = customerInput.trim();
+        if (!nextName) {
+            showNotification('ادخل اسم العميل', 'error');
+            return;
+        }
+        setCustomerName(nextName);
+        setActiveModal(null);
+    };
+
+    const toggleHoldInvoice = () => {
+        if (cart.length > 0) {
+            const newHeldInvoice: HeldInvoice = {
+                id: `invoice-${Date.now()}`,
+                cart: cart,
+                timestamp: Date.now(),
+            };
+            setHeldCarts((prev) => [...prev, newHeldInvoice]);
+            setCart([]);
+            setSelectedItemId(null);
+            showNotification(`تم تعليق الفاتورة (${heldCarts.length + 1})`, 'success');
+            return;
+        }
+        if (heldCarts.length > 0) {
+            setShowHeldInvoicesModal(true);
+            return;
+        }
+        showNotification('لا توجد فاتورة للتعليق أو الاسترجاع', 'info');
+    };
+
+    const restoreHeldInvoice = (invoice: HeldInvoice) => {
+        setCart(invoice.cart);
+        setHeldCarts((prev) => prev.filter((inv) => inv.id !== invoice.id));
+        setSelectedItemId(null);
+    };
+
+    const removeHeldInvoice = (id: string) => {
+        setHeldCarts((prev) => prev.filter((inv) => inv.id !== id));
+    };
+
+    const toggleRefundSelected = () => {
+        if (!selectedItem) {
+            showNotification('اختر صنفاً أولاً', 'warning');
+            return;
+        }
+        setCart((prev) =>
+            prev.map((item) => {
+                if (item.id !== selectedItem.id) return item;
+                return {
+                    ...item,
+                    quantity: item.quantity > 0 ? -Math.abs(item.quantity) : Math.abs(item.quantity),
+                };
+            }),
+        );
+    };
+
+    const handleSideAction = (action: string) => {
+        switch (action) {
+            case 'delete':
+                if (!selectedItem) {
+                    showNotification('اختر صنفاً للحذف', 'warning');
+                    return;
+                }
+                removeFromCart(selectedItem.id);
+                break;
+            case 'quantity':
+                openQuantityModal();
+                break;
+            case 'new-invoice':
+                clearCart();
+                break;
+            case 'search':
+                setIsSearchFocused(true);
+                break;
+            case 'drawer':
+                showNotification('تم فتح درج النقد', 'success');
+                break;
+            case 'local':
+                setCustomerName('محلي');
+                break;
+            case 'customer':
+                openCustomerModal();
+                break;
+            case 'discount':
+                openDiscountModal();
+                break;
+            case 'note':
+                openNoteModal();
+                break;
+            case 'refund':
+                toggleRefundSelected();
+                break;
+            case 'hold':
+                toggleHoldInvoice();
+                break;
+            case 'transfer':
+                showNotification('تم تنفيذ: تحويل', 'info');
+                break;
+            case 'more':
+                showNotification('خيارات إضافية قريباً', 'info');
+                break;
+            case 'credit':
+                showNotification('تم تنفيذ: بيع آجل', 'success');
+                break;
+            default:
+                break;
+        }
+    };
+
+    if (!mounted) return null;
+
+    return (
+        <div className="flex flex-col h-screen overflow-hidden selection:bg-blue-500 selection:text-white bg-gray-50 dark:bg-pos-dark">
+            <header className="flex items-center justify-between px-4 py-2 bg-gray-200 dark:bg-[#2b2b2b] border-b border-gray-300 dark:border-pos-border h-12 shrink-0 gap-4">
+                <div className="text-sm font-bold text-gray-500">PosFace Lite</div>
+                <div className="text-xs text-gray-500 dark:text-gray-300">العميل: {customerName}</div>
+                <button
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    className="p-2 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                    {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
+                </button>
+            </header>
+
+            <div className="flex flex-1 overflow-hidden">
+                <div className="flex-1 flex flex-col border-l border-gray-300 dark:border-pos-border">
+                    <SearchBarRow
+                        searchOptions={SEARCH_OPTIONS}
+                        searchMode={searchMode}
+                        onSearchModeChange={setSearchMode}
+                        searchQuery={searchQuery}
+                        onSearchQueryChange={setSearchQuery}
+                        onSearchFocusedChange={setIsSearchFocused}
+                        showSearchDropdown={showSearchDropdown}
+                        filteredProducts={filteredProducts}
+                        onSelectProduct={(product) => {
+                            addToCart(product);
+                            setSearchQuery('');
+                            setIsSearchFocused(false);
+                        }}
+                    />
+
+                    <CartTable
+                        cart={cart}
+                        selectedItemId={selectedItemId}
+                        editingPriceItemId={editingPriceItemId}
+                        subtotal={subtotal}
+                        invoiceDiscount={invoiceDiscountAmount}
+                        tax={tax}
+                        total={total}
+                        onSelectRow={setSelectedItemId}
+                        onStartPriceEdit={setEditingPriceItemId}
+                        onStopPriceEdit={() => setEditingPriceItemId(null)}
+                        onPriceListChange={updateItemPriceFromList}
+                        onRemoveItem={removeFromCart}
+                        onQuickAddFromEmpty={addToCart}
+                        products={DUMMY_PRODUCTS}
+                    />
+                </div>
+
+                <SidePanel
+                    paymentMethod={paymentMethod}
+                    onPaymentMethodChange={setPaymentMethod}
+                    onAction={handleSideAction}
+                    onClearInvoice={clearCart}
+                />
+            </div>
+
+            <QuantityModal
+                open={isQuantityModalOpen}
+                value={quantityInput}
+                productName={selectedItem?.name}
+                onValueChange={setQuantityInput}
+                onClose={() => setIsQuantityModalOpen(false)}
+                onSubmit={applyQuantityChange}
+            />
+
+            <DiscountModal
+                open={isDiscountModalOpen}
+                hasSelectedItem={Boolean(selectedItem)}
+                scope={discountScope}
+                type={discountType}
+                value={discountInput}
+                itemName={selectedItem?.name}
+                onScopeChange={setDiscountScope}
+                onTypeChange={setDiscountType}
+                onValueChange={setDiscountInput}
+                onClose={() => setIsDiscountModalOpen(false)}
+                onSubmit={applyDiscount}
+                onRemoveDiscount={removeDiscount}
+            />
+
+            {activeModal === 'note' && (
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+                    onClick={(e) => e.target === e.currentTarget && setActiveModal(null)}
+                >
+                    <div className="pos-modal-card w-full max-w-xs rounded-sm border border-gray-300 dark:border-[#3d3d3d] p-4">
+                        <h3 className="text-base font-semibold">ملاحظة الصنف</h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 mb-3">{selectedItem?.name}</p>
+                        <textarea
+                            value={noteInput}
+                            onChange={(e) => setNoteInput(e.target.value)}
+                            rows={4}
+                            className="w-full rounded-sm border border-[#2487c9] bg-white dark:bg-[#212224] px-3 py-2 text-[#0b5ea8] dark:text-[#8fd3ff]"
+                        />
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button onClick={() => setActiveModal(null)} className="px-3 py-2 rounded-sm border border-gray-300 dark:border-gray-600">إلغاء</button>
+                            <button onClick={applyNote} className="px-3 py-2 rounded-sm bg-blue-600 text-white hover:bg-blue-700">حفظ</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeModal === 'customer' && (
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 pt-4 px-4"
+                    onClick={(e) => e.target === e.currentTarget && setActiveModal(null)}
+                >
+                    <div className="pos-modal-card w-full max-w-xs rounded-sm border border-gray-300 dark:border-[#3d3d3d] p-4">
+                        <h3 className="text-base font-semibold">اسم العميل</h3>
+                        <input
+                            value={customerInput}
+                            onChange={(e) => setCustomerInput(e.target.value)}
+                            className="mt-3 w-full h-10 rounded-sm border border-[#2487c9] bg-white dark:bg-[#212224] px-3 text-[#0b5ea8] dark:text-[#8fd3ff]"
+                        />
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button onClick={() => setActiveModal(null)} className="px-3 py-2 rounded-sm border border-gray-300 dark:border-gray-600">إلغاء</button>
+                            <button onClick={applyCustomer} className="px-3 py-2 rounded-sm bg-blue-600 text-white hover:bg-blue-700">حفظ</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <HeldInvoicesModal
+                open={showHeldInvoicesModal}
+                heldInvoices={heldCarts}
+                onClose={() => setShowHeldInvoicesModal(false)}
+                onSelectInvoice={restoreHeldInvoice}
+                onRemoveInvoice={removeHeldInvoice}
+            />
+
+            <ConfirmModal
+                open={showClearConfirm}
+                title="إلغاء الفاتورة"
+                message="هل أنت متأكد من إلغاء الفاتورة الحالية؟ لا يمكن التراجع عن هذا الإجراء."
+                confirmText="نعم، ألغ"
+                cancelText="إلغاء"
+                isDangerous
+                onClose={() => setShowClearConfirm(false)}
+                onConfirm={confirmClearCart}
+            />
+
+            <NotificationManager notifications={notifications} onRemove={removeNotification} />
+        </div>
+    );
+}
+
+
+================================================================
+File Path: app\providers.tsx
+================================================================
+
+"use client";
+
+import { ThemeProvider } from "next-themes";
+
+export function Providers({ children }: { children: React.ReactNode }) {
+    return (
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+        </ThemeProvider>
+    );
+}
+
+================================================================
+File Path: CLAUDE.md
+================================================================
+
+@AGENTS.md
+
+
+================================================================
+File Path: eslint.config.mjs
+================================================================
+
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+
+
+================================================================
+File Path: next-env.d.ts
+================================================================
+
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/dev/types/routes.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+
+
+================================================================
+File Path: next.config.ts
+================================================================
+
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+
+================================================================
+File Path: package.json
+================================================================
+
+{
+  "name": "posface",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.5.0",
+    "lucide-react": "^1.8.0",
+    "next": "16.2.3",
+    "next-themes": "^0.4.6",
+    "postcss": "^8.5.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5"
+  },
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}
+
+================================================================
+File Path: postcss.config.mjs
+================================================================
+
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+
+================================================================
+File Path: README.md
+================================================================
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+================================================================
+File Path: tsconfig.json
+================================================================
+
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
