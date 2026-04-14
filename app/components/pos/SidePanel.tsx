@@ -32,8 +32,8 @@ export default function SidePanel({
     onClearInvoice,
 }: SidePanelProps) {
     return (
-        <div className="w-85 bg-gray-200 dark:bg-pos-dark-panel flex flex-col shrink-0">
-            <div className="grid grid-cols-4 gap-px bg-gray-300 dark:bg-pos-border p-px">
+        <div className="w-85 bg-gray-200 dark:bg-pos-dark-panel flex flex-col shrink-0 p-px">
+            <div className="grid grid-cols-4 gap-px bg-gray-300 dark:bg-pos-border p-px ">
                 <ActionButton FKey="" icon={X} label="حذف" onClick={() => onAction('delete')} />
                 <ActionButton FKey="F3" icon={SearchCode} label="البحث" onClick={() => onAction('search')} />
                 <ActionButton FKey="F4" icon={PackagePlus} label="الكمية" onClick={() => onAction('quantity')} />

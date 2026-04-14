@@ -292,7 +292,7 @@ export default function PosFace() {
                 </button>
             </header>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-row-reverse flex-1 overflow-hidden ">
                 <div className="flex-1 flex flex-col border-l border-gray-200 dark:border-pos-border bg-white dark:bg-pos-dark">
                     <SearchBarRow
                         searchOptions={SEARCH_OPTIONS}

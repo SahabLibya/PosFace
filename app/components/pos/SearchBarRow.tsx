@@ -33,14 +33,14 @@ export default function SearchBarRow({
 }: SearchBarRowProps) {
     return (
         <div className="px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] border-b border-gray-300 dark:border-pos-border">
-            <div className="flex items-center gap-2 w-full min-w-0">
+            <div className="flex flex-row-reverse items-center gap-2 w-full min-w-0">
                 {searchOptions.map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
                         onClick={() => onSearchModeChange(key)}
                         className={`h-10 min-w-16.5 px-2 rounded border flex flex-col items-center justify-center transition-colors ${searchMode === key
-                                ? 'bg-blue-600 border-blue-600 text-white'
-                                : 'bg-white dark:bg-pos-dark-panel border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-pos-dark-hover'
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white dark:bg-pos-dark-panel border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-pos-dark-hover'
                             }`}
                     >
                         <Icon className="w-4 h-4 mb-0.5" />

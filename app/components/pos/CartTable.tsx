@@ -127,7 +127,7 @@ export default function CartTable({
             </div>
 
             <div className="bg-gray-100 dark:bg-[#1a1a1a] border-t border-gray-300 dark:border-pos-border p-4 shrink-0">
-                <div className='w-1/3 float-left'>
+                <div className='w-1/3'>
                     <div className="flex justify-between items-center mb-1 text-sm text-gray-600 dark:text-gray-400">
                         <span>المجموع</span>
                         <span>{subtotal.toFixed(2)}</span>
