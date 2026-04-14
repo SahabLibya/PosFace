@@ -186,7 +186,7 @@ export default function PosFace() {
             case 'delete': if (selectedItem) removeFromCart(selectedItem.id); else showNotification('اختر صنفاً للحذف', 'warning'); break;
             case 'quantity': openQuantityModal(); break;
             case 'new-invoice': clearCart(); break;
-            case 'search': setIsSearchFocused(true); document.querySelector('input[type="text"]')?.focus(); break;
+            case 'search': setIsSearchFocused(true); (document.querySelector('input[type="text"]') as HTMLInputElement)?.focus(); break;
             case 'drawer': showNotification('تم فتح درج النقد', 'success'); break;
             case 'local': setCustomerName('محلي'); break;
             case 'customer': openCustomerModal(); break;
