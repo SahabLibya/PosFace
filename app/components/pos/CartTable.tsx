@@ -67,8 +67,8 @@ export default function CartTable({
                             key={item.id}
                             onClick={() => onSelectRow(item.id)}
                             className={`grid grid-cols-13 gap-4 px-2 py-3 border-b border-gray-200 dark:border-gray-800 items-center group cursor-pointer text-gray-800 dark:text-gray-200 ${selectedItemId === item.id
-                                    ? 'bg-blue-100 dark:bg-blue-900/40'
-                                    : 'hover:bg-gray-50 dark:hover:bg-pos-dark-hover'
+                                ? 'bg-blue-100 dark:bg-blue-900/40'
+                                : 'hover:bg-gray-50 dark:hover:bg-pos-dark-hover'
                                 }`}
                         >
                             <div className="col-span-6 flex flex-col">
@@ -127,22 +127,25 @@ export default function CartTable({
             </div>
 
             <div className="bg-gray-100 dark:bg-[#1a1a1a] border-t border-gray-300 dark:border-pos-border p-4 shrink-0">
-                <div className="flex justify-between items-center mb-1 text-sm text-gray-600 dark:text-gray-400">
-                    <span>المجموع</span>
-                    <span>{subtotal.toFixed(2)}</span>
+                <div className='w-1/3 float-left'>
+                    <div className="flex justify-between items-center mb-1 text-sm text-gray-600 dark:text-gray-400">
+                        <span>المجموع</span>
+                        <span>{subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-1 text-sm text-red-600 dark:text-red-400">
+                        <span>الخصم</span>
+                        <span>-{invoiceDiscount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2 pb-2 border-b border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
+                        <span>ضريبة</span>
+                        <span>{tax.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-2xl font-bold text-gray-900 dark:text-white">
+                        <span>الإجمالي</span>
+                        <span>{total.toFixed(2)}</span>
+                    </div>
                 </div>
-                <div className="flex justify-between items-center mb-1 text-sm text-red-600 dark:text-red-400">
-                    <span>الخصم</span>
-                    <span>-{invoiceDiscount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2 pb-2 border-b border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400">
-                    <span>ضريبة</span>
-                    <span>{tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-2xl font-bold text-gray-900 dark:text-white">
-                    <span>الإجمالي</span>
-                    <span>{total.toFixed(2)}</span>
-                </div>
+
             </div>
         </>
     );
